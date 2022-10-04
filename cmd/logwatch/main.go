@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/paveldanilin/echo-log/internal/script"
+	"github.com/paveldanilin/logwatch/internal/script"
 )
 
 func main() {

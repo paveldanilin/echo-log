@@ -1,4 +1,4 @@
-module github.com/paveldanilin/echo-log
+module github.com/paveldanilin/logwatch
 
 go 1.19
 
