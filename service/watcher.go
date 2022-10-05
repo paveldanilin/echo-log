@@ -17,7 +17,7 @@ type tailFileWatcher struct {
 func (tailWatcher *tailFileWatcher) watch() {
 
 	t, err := tail.TailFile(
-		"/var/log/nginx.log", tail.Config{Follow: true, ReOpen: true})
+		tailWatcher.filename, tail.Config{Follow: true, ReOpen: true})
 	if err != nil {
 		panic(err)
 	}
