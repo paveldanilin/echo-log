@@ -1,16 +1,35 @@
 package service
 
+import (
+	"fmt"
+
+	"github.com/nxadm/tail"
+)
+
 type FileWatcher interface {
 	watch()
-	watchBackground()
-	pause()
-	stop()
 }
 
 type tailFileWatcher struct {
 	filename string
 }
 
+func (tailWatcher *tailFileWatcher) watch() {
+
+	t, err := tail.TailFile(
+		"/var/log/nginx.log", tail.Config{Follow: true, ReOpen: true})
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the text of each received line
+	for line := range t.Lines { // TODO: call processor
+		fmt.Println(line.Text)
+	}
+}
+
+/*
 type cronFileWatcher struct {
 	filename string
 }
+*/
