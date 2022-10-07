@@ -1,35 +1,33 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/nxadm/tail"
 )
 
+type LineConsumer func(string)
+
 type FileWatcher interface {
-	watch()
+	Watch(c LineConsumer)
 }
 
 type tailFileWatcher struct {
 	filename string
 }
 
-func (tailWatcher *tailFileWatcher) watch() {
+func NewTailFileWatcher(filename string) FileWatcher {
+	return &tailFileWatcher{
+		filename: filename,
+	}
+}
 
+func (watcher *tailFileWatcher) Watch(c LineConsumer) {
 	t, err := tail.TailFile(
-		tailWatcher.filename, tail.Config{Follow: true, ReOpen: true})
+		watcher.filename, tail.Config{Follow: true, ReOpen: true})
 	if err != nil {
 		panic(err)
 	}
 
-	// Print the text of each received line
-	for line := range t.Lines { // TODO: call processor
-		fmt.Println(line.Text)
+	for line := range t.Lines {
+		c(line.Text)
 	}
 }
-
-/*
-type cronFileWatcher struct {
-	filename string
-}
-*/

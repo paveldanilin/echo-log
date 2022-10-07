@@ -1,22 +1,14 @@
 package main
 
 import (
-	"github.com/paveldanilin/logwatch/internal/script"
+	"fmt"
+
+	"github.com/paveldanilin/logwatch/service"
 )
 
 func main() {
-
-	s := script.NewLuaScript()
-	s.LoadString(`
-		function zoo()
-			return "zeebra"
-		end
-	`)
-
-	ret, err := s.CallFunction("zoo")
-	if err != nil {
-		panic(err)
-	}
-	println(ret.(string))
-
+	w := service.NewTailFileWatcher("./test.log")
+	w.Watch(func(line string) {
+		fmt.Println(line)
+	})
 }

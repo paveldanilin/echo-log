@@ -19,8 +19,8 @@ func (event *Event) HasField(name string) bool {
 	return ok
 }
 
-func (le *Event) GetField(name string) (string, error) {
-	if v, ok := le.fields[name]; ok {
+func (event *Event) GetField(name string) (string, error) {
+	if v, ok := event.fields[name]; ok {
 		return v, nil
 	}
 	return "", fmt.Errorf("field noes not exists")
