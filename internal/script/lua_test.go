@@ -2,7 +2,10 @@ package script
 
 import (
 	"testing"
+	"time"
 )
+
+// --- person ---
 
 type person struct {
 	name string
@@ -34,6 +37,28 @@ func getPersonAge(p *person) int {
 	return p.age
 }
 
+// --- event ---
+
+type event struct {
+	name      string
+	timestamp int64
+}
+
+func newEvent(name string) *event {
+	return &event{
+		name:      name,
+		timestamp: time.Now().Unix(),
+	}
+}
+
+func (e *event) GetName() string {
+	return e.name
+}
+
+func (e *event) GetTimestamp() int64 {
+	return e.timestamp
+}
+
 // ----
 // Test
 // ----
@@ -47,7 +72,7 @@ func TestCallLuaFunction(t *testing.T) {
 	`)
 
 	want := 7
-	got, err := s.CallFunction("add", 5, 2)
+	got, err := s.Call("add", 5, 2)
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -65,7 +90,7 @@ func TestCallGoFunction(t *testing.T) {
 	})
 
 	want := 10
-	got, err := s.CallFunction("sub", 20, 10)
+	got, err := s.Call("sub", 20, 10)
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -86,7 +111,7 @@ func TestRegisterInt(t *testing.T) {
 	`)
 
 	want := 1234567891
-	got, err := s.CallFunction("get_glbal_value_plus_one")
+	got, err := s.Call("get_glbal_value_plus_one")
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -107,7 +132,7 @@ func TestRegisterString(t *testing.T) {
 	`)
 
 	want := "abcd"
-	got, err := s.CallFunction("get_glbal_value_plus_char")
+	got, err := s.Call("get_glbal_value_plus_char")
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -129,7 +154,7 @@ func TestRegisterTypeAndCallGetter(t *testing.T) {
 	`)
 
 	want := "Batman"
-	got, err := s.CallFunction("main")
+	got, err := s.Call("main")
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -152,7 +177,7 @@ func TestRegisterTypeAndCallSetter(t *testing.T) {
 	`)
 
 	want := 33
-	got, err := s.CallFunction("main")
+	got, err := s.Call("main")
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -172,7 +197,7 @@ func TestLoadFile(t *testing.T) {
 	}
 
 	want := 1000
-	got, err := s.CallFunction("main")
+	got, err := s.Call("main")
 
 	if err != nil {
 		t.Errorf("got error: %s", err)
@@ -180,6 +205,32 @@ func TestLoadFile(t *testing.T) {
 
 	if got != want {
 		t.Errorf("got %d, wanted %d", got, want)
+	}
+}
+
+func TestCallWithUserdata(t *testing.T) {
+	s := NewLuaScript()
+	err := s.LoadString(`
+		function event_test(event)
+			return event:GetName() 	-- Invoke a method of passed object
+		end
+	`)
+
+	if err != nil {
+		t.Errorf("got error: %s", err)
+	}
+
+	userUpdateEvent := newEvent("user:update")
+
+	got, err := s.Call("event_test", userUpdateEvent)
+	if err != nil {
+		t.Errorf("got error: %s", err)
+	}
+
+	want := userUpdateEvent.GetName()
+
+	if got != want {
+		t.Errorf("got %s, wanted %s", got, want)
 	}
 }
 
@@ -196,5 +247,5 @@ func BenchmarkDoWork(b *testing.B) {
 		return n * f
 	})
 
-	myScript.CallFunction("test")
+	myScript.Call("test")
 }

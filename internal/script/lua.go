@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"time"
 
 	golua "github.com/yuin/gopher-lua"
+	luar "layeh.com/gopher-luar"
 )
 
 // @see https://morioh.com/p/f9f6ad4de5b8
@@ -47,7 +47,7 @@ func (lua *LuaScript) RegisterFunction(name string, f interface{}) error {
 	if reflect.TypeOf(f).Kind() != reflect.Func {
 		return errors.New("is not a function")
 	}
-	lua.state.SetGlobal(name, lua.state.NewFunction(lua.toLuaFunc(f)))
+	lua.state.SetGlobal(name, lua.state.NewFunction(lua.wrapFunc(f)))
 	return nil
 }
 
@@ -124,30 +124,30 @@ func (lua *LuaScript) RegisterType(name string, factory interface{}, methods map
 	// Methods
 	luaMethods := make(map[string]golua.LGFunction)
 	for k, f := range methods {
-		luaMethods[k] = lua.toLuaFunc(f)
+		luaMethods[k] = lua.wrapFunc(f)
 	}
 
 	lua.state.SetField(mt, "__index", lua.state.SetFuncs(lua.state.NewTable(), luaMethods))
 }
 
-// CallFunction
+// Call
 // Calls a LUA function
-func (lua *LuaScript) CallFunction(fn string, args ...interface{}) (interface{}, error) {
+func (lua *LuaScript) Call(fn string, args ...interface{}) (interface{}, error) {
 	// Lookup for a LUA function
-	lVal := lua.state.GetGlobal(fn)
-	if lVal.Type() != golua.LTFunction {
+	lval := lua.state.GetGlobal(fn)
+	if lval.Type() != golua.LTFunction {
 		return nil, fmt.Errorf("[%s] is not a LUA function", fn)
 	}
 
 	// Convert args to LUA values
 	fnArgs := make([]golua.LValue, len(args))
 	for i, arg := range args {
-		fnArgs[i] = lua.toLuaValue(arg)
+		fnArgs[i] = lua.mapToLuaValue2(arg)
 	}
 
 	// Call a LUA function
 	if err := lua.state.CallByParam(golua.P{
-		Fn:      lVal, // name of LUA function
+		Fn:      lval, // name of LUA function
 		NRet:    1,    // number of returned values
 		Protect: true, // return error or panic
 	}, fnArgs...); err != nil {
@@ -157,13 +157,13 @@ func (lua *LuaScript) CallFunction(fn string, args ...interface{}) (interface{},
 	ret := lua.state.Get(-1) // returned value
 	lua.state.Pop(1)         // remove received value
 
-	return lua.toValue(ret)
+	return lua.mapToValue(ret)
 }
 
-// toLuaFunc
+// wrapFunc
 // GO -> LUA
 // Converts a Go function to a LUA function
-func (lua *LuaScript) toLuaFunc(f interface{}) golua.LGFunction {
+func (lua *LuaScript) wrapFunc(f interface{}) golua.LGFunction {
 	return func(L *golua.LState) int {
 		rf := reflect.ValueOf(f)
 		ft := reflect.TypeOf(f)
@@ -185,7 +185,7 @@ func (lua *LuaScript) toLuaFunc(f interface{}) golua.LGFunction {
 			case golua.LTUserData:
 				gv = L.ToUserData(i + 1).Value
 			default:
-				panic("Could not convert LUA type to GO type")
+				panic("could not convert LUA type to GO type")
 			}
 			args = append(args, reflect.ValueOf(gv))
 		}
@@ -212,66 +212,17 @@ func (lua *LuaScript) toLuaFunc(f interface{}) golua.LGFunction {
 	}
 }
 
-// toLuaValue
+// mapToLuaValue
 // GO -> LUA
 // Converts a Go value to a LUA value
-func (lua *LuaScript) toLuaValue(v interface{}) golua.LValue {
-	if v == nil {
-		return golua.LNil
-	}
-
-	switch v.(type) {
-	case float64:
-		return golua.LNumber(v.(float64))
-	case int:
-		return golua.LNumber(v.(int))
-	case int64:
-		return golua.LNumber(v.(int64))
-	case string:
-		return golua.LString(v.(string))
-	case bool:
-		return golua.LBool(v.(bool))
-	case []byte:
-		return golua.LString(string(v.([]byte)))
-	case map[string]interface{}:
-		return lua.toLuaTable(v.(map[string]interface{}))
-	case time.Time:
-		return golua.LNumber(v.(time.Time).Unix())
-	case []map[string]interface{}:
-		sliceTable := &golua.LTable{}
-		for _, s := range v.([]map[string]interface{}) {
-			tble := lua.toLuaTable(s)
-			sliceTable.Append(tble)
-		}
-		return sliceTable
-	case []interface{}:
-		sliceTable := &golua.LTable{}
-		for _, s := range v.([]interface{}) {
-			sliceTable.Append(lua.toLuaValue(s))
-		}
-		return sliceTable
-	}
-
-	panic(fmt.Sprintf("could not map [%s] => lua type", reflect.ValueOf(v).Kind().String()))
-}
-
-// toLuaTable
-// GO -> LUA
-// Converts a Go map to a LUA table
-func (lua *LuaScript) toLuaTable(m map[string]interface{}) *golua.LTable {
-	resultTable := &golua.LTable{}
-
-	for key, value := range m {
-		resultTable.RawSetString(key, lua.toLuaValue(value))
-	}
-
-	return resultTable
+func (lua *LuaScript) mapToLuaValue2(v interface{}) golua.LValue {
+	return luar.New(lua.state, v)
 }
 
 // toGoValue
 // LUA -> GO
 // Converts a LUA value to a GO value
-func (lua *LuaScript) toValue(lval golua.LValue) (interface{}, error) {
+func (lua *LuaScript) mapToValue(lval golua.LValue) (interface{}, error) {
 
 	switch lval.Type() {
 	case golua.LTNil:
@@ -294,3 +245,60 @@ func str2number(s string) (interface{}, error) {
 	}
 	return strconv.ParseFloat(s, 64)
 }
+
+/*
+func (lua *LuaScript) mapToLuaValue(v interface{}) golua.LValue {
+	if v == nil {
+		return golua.LNil
+	}
+
+	switch v.(type) {
+	case float64:
+		return golua.LNumber(v.(float64))
+	case int:
+		return golua.LNumber(v.(int))
+	case int64:
+		return golua.LNumber(v.(int64))
+	case string:
+		return golua.LString(v.(string))
+	case bool:
+		return golua.LBool(v.(bool))
+	case []byte:
+		return golua.LString(string(v.([]byte)))
+	case map[string]interface{}:
+		return lua.mapToLuaTable(v.(map[string]interface{}))
+	case time.Time:
+		return golua.LNumber(v.(time.Time).Unix())
+	case []map[string]interface{}:
+		sliceTable := &golua.LTable{}
+		for _, s := range v.([]map[string]interface{}) {
+			tble := lua.mapToLuaTable(s)
+			sliceTable.Append(tble)
+		}
+		return sliceTable
+	case []interface{}:
+		sliceTable := &golua.LTable{}
+		for _, s := range v.([]interface{}) {
+			sliceTable.Append(lua.mapToLuaValue(s))
+		}
+		return sliceTable
+	}
+
+	panic("could not convert type")
+}
+*/
+
+// mapToLuaTable
+// GO -> LUA
+// Converts a Go map to a LUA table
+/*
+func (lua *LuaScript) mapToLuaTable(m map[string]interface{}) *golua.LTable {
+	resultTable := &golua.LTable{}
+
+	for key, value := range m {
+		resultTable.RawSetString(key, lua.mapToLuaValue2(value))
+	}
+
+	return resultTable
+}
+*/

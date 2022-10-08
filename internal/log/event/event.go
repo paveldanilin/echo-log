@@ -1,14 +1,10 @@
-package log
-
-import (
-	"fmt"
-)
+package event
 
 type Event struct {
 	fields map[string]string
 }
 
-func NewEvent() *Event {
+func New() *Event {
 	return &Event{
 		fields: make(map[string]string),
 	}
@@ -19,13 +15,17 @@ func (event *Event) HasField(name string) bool {
 	return ok
 }
 
-func (event *Event) GetField(name string) (string, error) {
+func (event *Event) GetField(name string) string {
 	if v, ok := event.fields[name]; ok {
-		return v, nil
+		return v
 	}
-	return "", fmt.Errorf("field noes not exists")
+	return ""
 }
 
 func (event *Event) SetField(name string, value string) {
 	event.fields[name] = value
+}
+
+func (event *Event) GetFields() map[string]string {
+	return event.fields
 }
