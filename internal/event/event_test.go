@@ -43,8 +43,8 @@ func TestEventDoesNotHaveField(t *testing.T) {
 // --
 
 func TestDef(t *testing.T) {
-	f1 := NewFieldDefinition("name", FIELD_STRING)
-	f2 := NewFieldDefinition("age", FIELD_NUMBER)
+	f1 := NewFieldDefinition("name", FIELD_STRING, make(map[string]interface{}))
+	f2 := NewFieldDefinition("age", FIELD_NUMBER, map[string]interface{}{})
 
 	ed := NewDefinition([]*FieldDefinition{f1, f2})
 
