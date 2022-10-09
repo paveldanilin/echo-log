@@ -9,11 +9,7 @@ func TestEventSetGetField(t *testing.T) {
 	e.SetField("name", "Batman")
 
 	want := "Batman"
-	got, err := e.GetField("name")
-
-	if err != nil {
-		t.Errorf("got error: %s", err)
-	}
+	got := e.GetField("name")
 
 	if got != want {
 		t.Errorf("got %s, wanted %s", got, want)

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/paveldanilin/logwatch/internal/log/event"
+	"github.com/paveldanilin/logwatch/internal/event"
+	"github.com/paveldanilin/logwatch/internal/file"
 	"github.com/paveldanilin/logwatch/internal/script"
 	"github.com/paveldanilin/logwatch/service"
 )
@@ -28,18 +29,23 @@ func (csv *CsvEventParser) Parse(text string) *event.Event {
 }
 
 func main() {
+	ntf := service.NewNotifier()
+	//ntf.Notify("bzz", "abc", "test")
+
 	ep := CsvEventParser{}
 	s := script.NewLuaScript()
 	s.LoadFile("filter.lua")
 
-	w := service.NewTailFileWatcher("./test.log")
+	s.Register("ntf", ntf)
+
+	w := file.NewTailWatcher("./test.log")
 	w.Watch(func(line string) {
 
 		// parse
 		e := ep.Parse(line)
 
 		// TODO: decode line to event
-		r, err := s.Call("filter_event", e)
+		r, err := s.Call("lw_filter_event", e)
 		if err != nil {
 			panic(err)
 		}

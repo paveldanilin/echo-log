@@ -69,6 +69,10 @@ func (lua *LuaScript) RegisterString(name string, v string) {
 	lua.state.SetGlobal(name, golua.LString(v))
 }
 
+func (lua *LuaScript) Register(name string, v interface{}) {
+	lua.state.SetGlobal(name, luar.New(lua.state, v))
+}
+
 // RegisterType
 // http://dnaeon.github.io/extending-lua-with-go-types/
 // https://morioh.com/p/f9f6ad4de5b8
