@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/paveldanilin/logwatch/internal/event"
 	"github.com/paveldanilin/logwatch/internal/file"
@@ -10,29 +9,26 @@ import (
 	"github.com/paveldanilin/logwatch/service"
 )
 
-type EventParser interface {
-	Parse(text string) *event.Event
-}
-
-type CsvEventParser struct {
-}
-
-func (csv *CsvEventParser) Parse(text string) *event.Event {
-	fields := strings.Split(text, ";")
-
-	e := event.New()
-	e.SetField("name", fields[0])
-	e.SetField("age", fields[1])
-	e.SetField("email", fields[2])
-
-	return e
-}
-
 func main() {
 	ntf := service.NewNotifier()
 	//ntf.Notify("bzz", "abc", "test")
 
-	ep := CsvEventParser{}
+	nameFieldDef := event.NewFieldDefinition("name", event.FIELD_STRING, map[string]interface{}{
+		"csv_column_index": 0,
+	})
+	ageDef := event.NewFieldDefinition("age", event.FIELD_STRING, map[string]interface{}{
+		"csv_column_index": 1,
+	})
+	emailDef := event.NewFieldDefinition("email", event.FIELD_STRING, map[string]interface{}{
+		"csv_column_index": 2,
+	})
+
+	def := event.NewDefinition([]*event.FieldDefinition{
+		nameFieldDef,
+		ageDef,
+		emailDef,
+	})
+	ep := event.NewCsvParser(def)
 	s := script.NewLuaScript()
 	s.LoadFile("filter.lua")
 

@@ -4,27 +4,27 @@ import "errors"
 
 // ParametersMap
 type ParametersMap struct {
-	parameters map[string]string
+	parameters map[string]interface{}
 }
 
-func NewParametersMap() *ParametersMap {
+func NewParametersMap(parameters map[string]interface{}) *ParametersMap {
 	return &ParametersMap{
-		parameters: make(map[string]string),
+		parameters: parameters,
 	}
 }
 
-func (p *ParametersMap) SetParameter(name string, value string) {
+func (p *ParametersMap) Set(name string, value interface{}) {
 	p.parameters[name] = value
 }
 
-func (p *ParametersMap) GetParameter(name string) (string, error) {
+func (p *ParametersMap) Get(name string) interface{} {
 	if v, ok := p.parameters[name]; ok {
-		return v, nil
+		return v
 	}
-	return "", errors.New("parameter not found")
+	return nil
 }
 
-func (p *ParametersMap) HasParameter(name string) bool {
+func (p *ParametersMap) Has(name string) bool {
 	_, ok := p.parameters[name]
 	return ok
 }
@@ -45,11 +45,11 @@ type FieldDefinition struct {
 	parametersMap *ParametersMap
 }
 
-func NewFieldDefinition(name string, fieldType FieldType) *FieldDefinition {
+func NewFieldDefinition(name string, fieldType FieldType, parameters map[string]interface{}) *FieldDefinition {
 	return &FieldDefinition{
 		name:          name,
 		fieldType:     fieldType,
-		parametersMap: NewParametersMap(),
+		parametersMap: NewParametersMap(parameters),
 	}
 }
 
@@ -61,8 +61,16 @@ func (fieldDef *FieldDefinition) GetFieldType() FieldType {
 	return fieldDef.fieldType
 }
 
-func (fieldDef *FieldDefinition) GetParametersMap() *ParametersMap {
-	return fieldDef.parametersMap
+func (fieldDef *FieldDefinition) GetParam(name string) interface{} {
+	return fieldDef.parametersMap.Get(name)
+}
+
+func (fieldDef *FieldDefinition) GetIntParam(name string) int {
+	return fieldDef.parametersMap.Get(name).(int)
+}
+
+func (fieldDef *FieldDefinition) HasParam(name string) bool {
+	return fieldDef.parametersMap.Has(name)
 }
 
 // Definition
