@@ -39,21 +39,3 @@ func TestEventDoesNotHaveField(t *testing.T) {
 		t.Errorf("got %t, wanted %t", got, want)
 	}
 }
-
-// --
-
-func TestDef(t *testing.T) {
-	f1 := NewFieldDefinition("name", FIELD_STRING, make(map[string]interface{}))
-	f2 := NewFieldDefinition("age", FIELD_NUMBER, map[string]interface{}{})
-
-	ed := NewDefinition([]*FieldDefinition{f1, f2})
-
-	ageDef, err := ed.GetFieldDefinition("age")
-	if err != nil {
-		panic(err)
-	}
-
-	if ageDef.GetFieldType() != FIELD_NUMBER {
-		t.Error("zzz")
-	}
-}

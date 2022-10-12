@@ -9,36 +9,62 @@ import (
 	"github.com/paveldanilin/logwatch/service"
 )
 
-func main() {
-	ntf := service.NewNotifier()
-	//ntf.Notify("bzz", "abc", "test")
-
+func getCsvDefinition() *event.Definition {
 	nameFieldDef := event.NewFieldDefinition("name", event.FIELD_STRING, map[string]interface{}{
-		"csv_column_index": 0,
+		"csv.field_index": 0,
 	})
 	ageDef := event.NewFieldDefinition("age", event.FIELD_STRING, map[string]interface{}{
-		"csv_column_index": 1,
+		"csv.field_index": 1,
 	})
 	emailDef := event.NewFieldDefinition("email", event.FIELD_STRING, map[string]interface{}{
-		"csv_column_index": 2,
+		"csv.field_index": 2,
 	})
 
-	def := event.NewDefinition([]*event.FieldDefinition{
+	return event.NewDefinition([]*event.FieldDefinition{
 		nameFieldDef,
 		ageDef,
 		emailDef,
 	})
-	ep := event.NewCsvParser(def)
+}
+
+func getPatternDefinition() *event.Definition {
+	dateTime := event.NewFieldDefinition("datetime", event.FIELD_STRING, map[string]interface{}{})
+	logLevel := event.NewFieldDefinition("loglevel", event.FIELD_STRING, map[string]interface{}{})
+	message := event.NewFieldDefinition("message", event.FIELD_STRING, map[string]interface{}{})
+
+	return event.NewDefinition([]*event.FieldDefinition{
+		dateTime,
+		logLevel,
+		message,
+	})
+}
+
+func main() {
+	ntf := service.NewNotifier()
+	//ntf.Notify("bzz", "abc", "test")
+
+	// def := getCsvDefinition()
+	// ep := event.NewCsvParser(def, ";")
+
+	def := getPatternDefinition()
+	ep := event.NewPatternParser(def, `(?P<datetime>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<loglevel> {0,}(INFO|ERROR|DEBUG|WARNING))\] (?P<message>.*)$`)
+
 	s := script.NewLuaScript()
 	s.LoadFile("filter.lua")
 
 	s.Register("ntf", ntf)
 
-	w := file.NewTailWatcher("./test.log")
+	w := file.NewTailWatcher(&file.TailWatcherConfig{
+		Filename: "./out.log",
+		// Follow:   true,
+	})
 	w.Watch(func(line string) {
-
 		// parse
 		e := ep.Parse(line)
+		if e == nil {
+			//fmt.Println("=>>>>" + line)
+			return
+		}
 
 		// TODO: decode line to event
 		r, err := s.Call("lw_filter_event", e)

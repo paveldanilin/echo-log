@@ -1,35 +1,8 @@
 package event
 
-import "errors"
-
-// ParametersMap
-type ParametersMap struct {
-	parameters map[string]interface{}
-}
-
-func NewParametersMap(parameters map[string]interface{}) *ParametersMap {
-	return &ParametersMap{
-		parameters: parameters,
-	}
-}
-
-func (p *ParametersMap) Set(name string, value interface{}) {
-	p.parameters[name] = value
-}
-
-func (p *ParametersMap) Get(name string) interface{} {
-	if v, ok := p.parameters[name]; ok {
-		return v
-	}
-	return nil
-}
-
-func (p *ParametersMap) Has(name string) bool {
-	_, ok := p.parameters[name]
-	return ok
-}
-
+// --------------------------------------------------------------------------------------------------------------------
 // Field definition
+// --------------------------------------------------------------------------------------------------------------------
 
 type FieldType int
 
@@ -40,56 +13,74 @@ const (
 )
 
 type FieldDefinition struct {
-	name          string
-	fieldType     FieldType
-	parametersMap *ParametersMap
+	name       string
+	fieldType  FieldType
+	parameters map[string]interface{}
 }
 
-func NewFieldDefinition(name string, fieldType FieldType, parameters map[string]interface{}) *FieldDefinition {
+func NewFieldDefinition(name string, fieldType FieldType) *FieldDefinition {
 	return &FieldDefinition{
-		name:          name,
-		fieldType:     fieldType,
-		parametersMap: NewParametersMap(parameters),
+		name:       name,
+		fieldType:  fieldType,
+		parameters: make(map[string]interface{}),
 	}
 }
 
-func (fieldDef *FieldDefinition) GetName() string {
-	return fieldDef.name
+func (field *FieldDefinition) GetName() string {
+	return field.name
 }
 
-func (fieldDef *FieldDefinition) GetFieldType() FieldType {
-	return fieldDef.fieldType
+func (field *FieldDefinition) GetFieldType() FieldType {
+	return field.fieldType
 }
 
-func (fieldDef *FieldDefinition) GetParam(name string) interface{} {
-	return fieldDef.parametersMap.Get(name)
+func (field *FieldDefinition) SetParam(name string, value interface{}) {
+	field.parameters[name] = value
 }
 
-func (fieldDef *FieldDefinition) GetIntParam(name string) int {
-	return fieldDef.parametersMap.Get(name).(int)
+func (field *FieldDefinition) GetParam(name string) interface{} {
+	if v, ok := field.parameters[name]; ok {
+		return v
+	}
+	return nil
 }
 
-func (fieldDef *FieldDefinition) HasParam(name string) bool {
-	return fieldDef.parametersMap.Has(name)
+func (field *FieldDefinition) HasParam(name string) bool {
+	_, ok := field.parameters[name]
+	return ok
 }
 
-// Definition
+func (field *FieldDefinition) GetIntParam(name string) int {
+	return field.GetParam(name).(int)
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// Event Definition
+// --------------------------------------------------------------------------------------------------------------------
 
 type Definition struct {
-	fieldDefinitions []*FieldDefinition
+	fields map[string]*FieldDefinition
 }
 
 func NewDefinition(fieldDefinitions []*FieldDefinition) *Definition {
-	return &Definition{
-		fieldDefinitions: fieldDefinitions,
+	def := &Definition{
+		fields: make(map[string]*FieldDefinition),
 	}
+	for _, field := range fieldDefinitions {
+		def.fields[field.GetName()] = field
+	}
+	return def
 }
 
-func (def *Definition) GetFieldDefinition(fieldName string) (*FieldDefinition, error) {
-	for _, fd := range def.fieldDefinitions {
-		if fd.GetName() == fieldName {
-			return fd, nil
-		}
+// Returns a number of fields
+func (def *Definition) GetSize() int {
+	return len(def.fields)
+}
+
+// Return a field definition or nil
+func (def *Definition) GetFieldDefinition(fieldName string) *FieldDefinition {
+	if def, ok := def.fields[fieldName]; ok {
+		return def
 	}
-	return nil, errors.New("field definition not found")
+	return nil
 }
