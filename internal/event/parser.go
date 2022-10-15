@@ -5,39 +5,8 @@ import (
 	"strings"
 )
 
-const csv_field_name_index = "csv.field_index"
-
 type Parser interface {
 	Parse(text string) *Event
-}
-
-// --------------------------------------------------------------------------------------------------------------------
-// CSV parser
-// --------------------------------------------------------------------------------------------------------------------
-
-type csvParser struct {
-	def       *Definition
-	separator string
-}
-
-func NewCsvParser(def *Definition, separator string) Parser {
-	return &csvParser{
-		def:       def,
-		separator: separator,
-	}
-}
-
-func (parser *csvParser) Parse(text string) *Event {
-	fields := strings.Split(text, parser.separator)
-
-	e := New()
-
-	for _, f := range parser.def.fields {
-		fieldIndex := f.GetIntParam(csv_field_name_index)
-		e.SetField(f.GetName(), fields[fieldIndex])
-	}
-
-	return e
 }
 
 // --------------------------------------------------------------------------------------------------------------------
