@@ -6,10 +6,10 @@ import (
 
 func TestEventSetGetField(t *testing.T) {
 	e := New()
-	e.SetField("name", "Batman")
+	e.SetValue("name", "Batman", FIELD_STRING)
 
 	want := "Batman"
-	got := e.GetField("name")
+	got := e.Field("name").Raw()
 
 	if got != want {
 		t.Errorf("got %s, wanted %s", got, want)
@@ -18,10 +18,10 @@ func TestEventSetGetField(t *testing.T) {
 
 func TestEventHasField(t *testing.T) {
 	e := New()
-	e.SetField("name", "Batman")
+	e.SetValue("name", "Batman", FIELD_STRING)
 
 	want := true
-	got := e.HasField("name")
+	got := e.Has("name")
 
 	if got != want {
 		t.Errorf("got %t, wanted %t", got, want)
@@ -30,10 +30,10 @@ func TestEventHasField(t *testing.T) {
 
 func TestEventDoesNotHaveField(t *testing.T) {
 	e := New()
-	e.SetField("name", "Batman")
+	e.SetValue("name", "Batman", FIELD_STRING)
 
 	want := false
-	got := e.HasField("age")
+	got := e.Has("age")
 
 	if got != want {
 		t.Errorf("got %t, wanted %t", got, want)

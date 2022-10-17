@@ -1,65 +1,80 @@
 package event
 
-// --------------------------------------------------------------------------------------------------------------------
-// Field definition
-// --------------------------------------------------------------------------------------------------------------------
-
-type FieldType int
+type FieldType string
 
 const (
-	FIELD_STRING   FieldType = 1
-	FIELD_NUMBER   FieldType = 2
-	FIELD_BOOL     FieldType = 3
-	FIELD_DATETIME FieldType = 4
+	FIELD_STRING   FieldType = "string"
+	FIELD_INT      FieldType = "int"
+	FIELD_FLOAT    FieldType = "float"
+	FIELD_BOOL     FieldType = "bool"
+	FIELD_DATETIME FieldType = "datetime"
 )
 
-type FieldDefinition struct {
+// --------------------------------------------------------------------------------------------------------------------
+
+type FieldDefinition interface {
+	GetName() string
+	GetType() FieldType
+}
+
+// Base fieldDefinition definition struct
+type fieldDefinition struct {
 	name      string
 	fieldType FieldType
 }
 
-func NewFieldDefinition(name string, fieldType FieldType) *FieldDefinition {
-	return &FieldDefinition{
+func NewFieldDefinition(name string, fieldType FieldType) FieldDefinition {
+	return &fieldDefinition{
 		name:      name,
 		fieldType: fieldType,
 	}
 }
 
-func (field *FieldDefinition) GetName() string {
+func (field *fieldDefinition) GetName() string {
 	return field.name
 }
 
-func (field *FieldDefinition) GetFieldType() FieldType {
+func (field *fieldDefinition) GetType() FieldType {
 	return field.fieldType
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-// Event Definition
-// --------------------------------------------------------------------------------------------------------------------
 
-type Definition struct {
-	fields map[string]*FieldDefinition
+type Definition interface {
+	SetField(field FieldDefinition)
+	GetField(fieldName string) FieldDefinition
+	GetFielsNum() int
+	GetFields() map[string]FieldDefinition
 }
 
-func NewDefinition(fieldDefinitions []*FieldDefinition) *Definition {
-	def := &Definition{
-		fields: make(map[string]*FieldDefinition),
-	}
-	for _, field := range fieldDefinitions {
-		def.fields[field.GetName()] = field
-	}
-	return def
+// Base event definition struct
+type definition struct {
+	fields map[string]FieldDefinition
 }
 
-// Returns a number of fields
-func (def *Definition) GetFielsNum() int {
-	return len(def.fields)
+func NewDefinition() Definition {
+	return &definition{
+		fields: make(map[string]FieldDefinition),
+	}
+}
+
+func (def *definition) SetField(field FieldDefinition) {
+	def.fields[field.GetName()] = field
 }
 
 // Return a field definition or nil
-func (def *Definition) GetField(fieldName string) *FieldDefinition {
+func (def *definition) GetField(fieldName string) FieldDefinition {
 	if def, ok := def.fields[fieldName]; ok {
 		return def
 	}
 	return nil
+}
+
+// Returns a number of fields
+func (def *definition) GetFielsNum() int {
+	return len(def.fields)
+}
+
+func (def *definition) GetFields() map[string]FieldDefinition {
+	return def.fields
 }
