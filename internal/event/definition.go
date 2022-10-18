@@ -1,40 +1,40 @@
 package event
 
-type FieldType string
+type ValueType string
 
 const (
-	FIELD_STRING   FieldType = "string"
-	FIELD_INT      FieldType = "int"
-	FIELD_FLOAT    FieldType = "float"
-	FIELD_BOOL     FieldType = "bool"
-	FIELD_DATETIME FieldType = "datetime"
+	VALUE_STRING   ValueType = "string"
+	VALUE_INT      ValueType = "int"
+	VALUE_FLOAT    ValueType = "float"
+	VALUE_BOOL     ValueType = "bool"
+	VALUE_DATETIME ValueType = "datetime"
 )
 
 // --------------------------------------------------------------------------------------------------------------------
 
 type FieldDefinition interface {
-	GetName() string
-	GetType() FieldType
+	Name() string
+	ValueType() ValueType
 }
 
 // Base fieldDefinition definition struct
 type fieldDefinition struct {
 	name      string
-	fieldType FieldType
+	fieldType ValueType
 }
 
-func NewFieldDefinition(name string, fieldType FieldType) FieldDefinition {
+func NewFieldDefinition(name string, fieldType ValueType) FieldDefinition {
 	return &fieldDefinition{
 		name:      name,
 		fieldType: fieldType,
 	}
 }
 
-func (field *fieldDefinition) GetName() string {
+func (field *fieldDefinition) Name() string {
 	return field.name
 }
 
-func (field *fieldDefinition) GetType() FieldType {
+func (field *fieldDefinition) ValueType() ValueType {
 	return field.fieldType
 }
 
@@ -42,9 +42,9 @@ func (field *fieldDefinition) GetType() FieldType {
 
 type Definition interface {
 	SetField(field FieldDefinition)
-	GetField(fieldName string) FieldDefinition
-	GetFielsNum() int
-	GetFields() map[string]FieldDefinition
+	Field(fieldName string) FieldDefinition
+	FieldsNum() int
+	Fields() map[string]FieldDefinition
 }
 
 // Base event definition struct
@@ -59,11 +59,11 @@ func NewDefinition() Definition {
 }
 
 func (def *definition) SetField(field FieldDefinition) {
-	def.fields[field.GetName()] = field
+	def.fields[field.Name()] = field
 }
 
 // Return a field definition or nil
-func (def *definition) GetField(fieldName string) FieldDefinition {
+func (def *definition) Field(fieldName string) FieldDefinition {
 	if def, ok := def.fields[fieldName]; ok {
 		return def
 	}
@@ -71,10 +71,10 @@ func (def *definition) GetField(fieldName string) FieldDefinition {
 }
 
 // Returns a number of fields
-func (def *definition) GetFielsNum() int {
+func (def *definition) FieldsNum() int {
 	return len(def.fields)
 }
 
-func (def *definition) GetFields() map[string]FieldDefinition {
+func (def *definition) Fields() map[string]FieldDefinition {
 	return def.fields
 }

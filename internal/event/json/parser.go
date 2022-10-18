@@ -1,37 +1,42 @@
-package csv
+package json
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
+	"github.com/ohler55/ojg/jp"
+	"github.com/ohler55/ojg/oj"
 	"github.com/paveldanilin/logwatch/internal/event"
 )
 
+// JSON event parser
+// Example:
+// 		- {"eventdate": 12345678, "level": "ERROR", "message": "Fatal error"}
+
 // --------------------------------------------------------------------------------------------------------------------
 
-// CSV field definition
 type FieldDefinition struct {
 	event.FieldDefinition
-	columnIndex int
+	pathExpr jp.Expr
 }
 
-func NewFieldDefinition(name string, fieldType event.ValueType, columnIndex int) *FieldDefinition {
+func NewFieldDefinition(name string, fieldType event.ValueType, jsonPath string) *FieldDefinition {
 	return &FieldDefinition{
 		FieldDefinition: event.NewFieldDefinition(name, fieldType),
-		columnIndex:     columnIndex,
+		pathExpr:        jp.MustParseString(jsonPath),
 	}
 }
 
 // --------------------------------------------------------------------------------------------------------------------
 
-// CSV event definition
 type EventDefinition struct {
 	event.Definition
 }
 
 func NewEventDefition() *EventDefinition {
-	return &EventDefinition{Definition: event.NewDefinition()}
+	return &EventDefinition{
+		Definition: event.NewDefinition(),
+	}
 }
 
 func (def *EventDefinition) SetField(field *FieldDefinition) {
@@ -45,16 +50,13 @@ func (def *EventDefinition) GetField(fieldName string) *FieldDefinition {
 
 // --------------------------------------------------------------------------------------------------------------------
 
-// CSV parser
 type parser struct {
 	definition *EventDefinition
-	separator  string
 }
 
-func NewParser(definition *EventDefinition, separator string) event.Parser {
+func NewParser(definition *EventDefinition) event.Parser {
 	return &parser{
 		definition: definition,
-		separator:  separator,
 	}
 }
 
@@ -65,20 +67,19 @@ func (p *parser) Parse(text string) (*event.Event, error) {
 		return nil, errors.New("text is empty")
 	}
 
-	csvFields := strings.Split(text, p.separator)
-	csvFieldsNum := len(csvFields)
+	obj, err := oj.ParseString(text)
+	if err != nil {
+		return nil, err
+	}
 
 	e := event.New()
 
 	for fieldName, fieldDefinition := range p.definition.Fields() {
-		fieldIndex := fieldDefinition.(*FieldDefinition).columnIndex
-		if fieldIndex > csvFieldsNum {
-			return nil, fmt.Errorf("[%s]: column index `%d` does not exist", fieldName, fieldIndex)
+		v := fieldDefinition.(*FieldDefinition).pathExpr.First(obj)
+		if v == nil {
+			v = ""
 		}
-		err := e.SetValue(fieldName, csvFields[fieldIndex], fieldDefinition.ValueType())
-		if err != nil {
-			return nil, err
-		}
+		e.SetValue(fieldName, v, fieldDefinition.ValueType())
 	}
 
 	return e, nil

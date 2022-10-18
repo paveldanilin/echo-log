@@ -10,13 +10,13 @@ import (
 )
 
 func getCsvDefinition() *event.Definition {
-	nameFieldDef := event.NewFieldDefinition("name", event.FIELD_STRING, map[string]interface{}{
+	nameFieldDef := event.NewFieldDefinition("name", event.VALUE_STRING, map[string]interface{}{
 		"csv.field_index": 0,
 	})
-	ageDef := event.NewFieldDefinition("age", event.FIELD_STRING, map[string]interface{}{
+	ageDef := event.NewFieldDefinition("age", event.VALUE_STRING, map[string]interface{}{
 		"csv.field_index": 1,
 	})
-	emailDef := event.NewFieldDefinition("email", event.FIELD_STRING, map[string]interface{}{
+	emailDef := event.NewFieldDefinition("email", event.VALUE_STRING, map[string]interface{}{
 		"csv.field_index": 2,
 	})
 
@@ -28,9 +28,9 @@ func getCsvDefinition() *event.Definition {
 }
 
 func getPatternDefinition() *event.Definition {
-	dateTime := event.NewFieldDefinition("datetime", event.FIELD_STRING, map[string]interface{}{})
-	logLevel := event.NewFieldDefinition("loglevel", event.FIELD_STRING, map[string]interface{}{})
-	message := event.NewFieldDefinition("message", event.FIELD_STRING, map[string]interface{}{})
+	dateTime := event.NewFieldDefinition("datetime", event.VALUE_STRING, map[string]interface{}{})
+	logLevel := event.NewFieldDefinition("loglevel", event.VALUE_STRING, map[string]interface{}{})
+	message := event.NewFieldDefinition("message", event.VALUE_STRING, map[string]interface{}{})
 
 	return event.NewDefinition([]*event.FieldDefinition{
 		dateTime,

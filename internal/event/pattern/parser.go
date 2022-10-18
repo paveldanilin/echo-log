@@ -10,26 +10,22 @@ import (
 
 // --------------------------------------------------------------------------------------------------------------------
 
-// Field definition
+// Pattern field definition
 type FieldDefinition struct {
 	event.FieldDefinition
-	groupName string
+	groupName string // Regex group name
 }
 
-func NewFieldDefinition(name string, fieldType event.FieldType, groupName string) *FieldDefinition {
+func NewFieldDefinition(name string, fieldType event.ValueType, groupName string) *FieldDefinition {
 	return &FieldDefinition{
 		FieldDefinition: event.NewFieldDefinition(name, fieldType),
 		groupName:       groupName,
 	}
 }
 
-func (field *FieldDefinition) GroupName() string {
-	return field.groupName
-}
-
 // --------------------------------------------------------------------------------------------------------------------
 
-// Event defintiion
+// Pattern event defintiion
 type EventDefinition struct {
 	event.Definition
 	re *regexp.Regexp
@@ -47,7 +43,7 @@ func (def *EventDefinition) SetField(field *FieldDefinition) {
 }
 
 func (def *EventDefinition) GetField(fieldName string) *FieldDefinition {
-	f := def.Definition.GetField(fieldName)
+	f := def.Definition.Field(fieldName)
 	return f.(*FieldDefinition)
 }
 
@@ -64,6 +60,8 @@ func NewParser(definitions []*EventDefinition) event.Parser {
 	}
 }
 
+// TODO: add multiline support
+// Returns an event object from text
 func (p *parser) Parse(text string) (*event.Event, error) {
 	text = strings.TrimSpace(text)
 	if len(text) == 0 {
@@ -79,10 +77,10 @@ func (p *parser) Parse(text string) (*event.Event, error) {
 
 	e := event.New()
 
-	for fieldName, fieldDefinition := range def.GetFields() {
+	for fieldName, fieldDefinition := range def.Fields() {
 		groupIndex := def.re.SubexpIndex(fieldDefinition.(*FieldDefinition).groupName)
 		rawText := strings.TrimSpace(matches[groupIndex])
-		err := e.SetValue(fieldName, rawText, fieldDefinition.GetType())
+		err := e.SetValue(fieldName, rawText, fieldDefinition.ValueType())
 		if err != nil {
 			return nil, err
 		}

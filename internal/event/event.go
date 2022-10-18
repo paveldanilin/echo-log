@@ -2,6 +2,7 @@ package event
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -16,8 +17,9 @@ type Parser interface {
 
 // Field value
 type FieldValue interface {
-	GetType() FieldType
-	Raw() string
+	ValueType() ValueType
+	Raw() interface{}
+	String() string
 }
 
 type StringValue interface {
@@ -42,16 +44,20 @@ type DatetimeValue interface {
 
 // Base field value
 type fieldValue struct {
-	fieldType FieldType
-	raw       string
+	fieldType ValueType
+	raw       interface{}
 }
 
-func (fv *fieldValue) GetType() FieldType {
+func (fv *fieldValue) ValueType() ValueType {
 	return fv.fieldType
 }
 
-func (fv *fieldValue) Raw() string {
+func (fv *fieldValue) Raw() interface{} {
 	return fv.raw
+}
+
+func (fv *fieldValue) String() string {
+	return fmt.Sprintf("%v", fv.raw)
 }
 
 // String
@@ -60,78 +66,111 @@ type stringValue struct {
 }
 
 func (s *stringValue) Value() string {
-	return s.raw
+	return s.raw.(string)
 }
 
 // Int
 type intValue struct {
 	fieldValue
-	value int
 }
 
 func (i *intValue) Value() int {
-	return i.value
+	return i.raw.(int)
 }
 
 // Float
 type floatValue struct {
 	fieldValue
-	value float64
 }
 
 func (f *floatValue) Value() float64 {
-	return f.value
+	return f.raw.(float64)
 }
 
 // Bool
 type boolValue struct {
 	fieldValue
-	value bool
 }
 
 func (b *boolValue) Value() bool {
-	return b.value
+	return b.raw.(bool)
 }
 
 // Datetime
 type datetimeValue struct {
 	fieldValue
-	value time.Time
 }
 
 func (dt *datetimeValue) Value() time.Time {
-	return dt.value
+	return dt.raw.(time.Time)
 }
 
-func NewFieldValue(raw string, fieldType FieldType) (FieldValue, error) {
+// Creates a new feild value
+func NewFieldValue(raw interface{}, fieldType ValueType) (FieldValue, error) {
+
+	if isString(raw) {
+		r, err := parseValue(raw.(string), fieldType)
+		if err != nil {
+			return nil, err
+		}
+		raw = r
+	}
+
 	v := fieldValue{fieldType: fieldType, raw: raw}
+
 	switch fieldType {
-	case FIELD_STRING:
+	case VALUE_STRING:
 		return &stringValue{fieldValue: v}, nil
-	case FIELD_INT:
-		i, err := strconv.Atoi(raw)
+	case VALUE_INT:
+		return &intValue{fieldValue: v}, nil
+	case VALUE_FLOAT:
+		return &floatValue{fieldValue: v}, nil
+	case VALUE_BOOL:
+		return &boolValue{fieldValue: v}, nil
+	case VALUE_DATETIME:
+		return &datetimeValue{fieldValue: v}, nil
+	}
+
+	return nil, errors.New("unknown field type")
+}
+
+// Is value string?
+func isString(v interface{}) bool {
+	if _, ok := v.(string); ok {
+		return true
+	}
+	return false
+}
+
+// Converts string to a specific type
+func parseValue(s string, fieldType ValueType) (interface{}, error) {
+	switch fieldType {
+	case VALUE_STRING:
+		return s, nil
+	case VALUE_INT:
+		i, err := strconv.Atoi(s)
 		if err != nil {
 			return nil, err
 		}
-		return &intValue{fieldValue: v, value: i}, nil
-	case FIELD_FLOAT:
-		f, err := strconv.ParseFloat(raw, 64)
+		return i, nil
+	case VALUE_FLOAT:
+		f, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return nil, err
 		}
-		return &floatValue{fieldValue: v, value: f}, nil
-	case FIELD_BOOL:
-		b, err := strconv.ParseBool(raw)
+		return f, nil
+	case VALUE_BOOL:
+		b, err := strconv.ParseBool(s)
 		if err != nil {
 			return nil, err
 		}
-		return &boolValue{fieldValue: v, value: b}, nil
-	case FIELD_DATETIME:
-		dt := carbon.Parse(raw)
+		return b, nil
+	case VALUE_DATETIME:
+		dt := carbon.Parse(s)
 		if dt.Error != nil {
 			return nil, dt.Error
 		}
-		return &datetimeValue{fieldValue: v, value: dt.Carbon2Time()}, nil
+		return dt.Carbon2Time(), nil
 	}
 	return nil, errors.New("unknown field type")
 }
@@ -166,16 +205,16 @@ func (event *Event) Value(fieldName string) interface{} {
 	if fv == nil {
 		return nil
 	}
-	switch fv.GetType() {
-	case FIELD_STRING:
+	switch fv.ValueType() {
+	case VALUE_STRING:
 		return fv.(StringValue).Value()
-	case FIELD_INT:
+	case VALUE_INT:
 		return fv.(IntValue).Value()
-	case FIELD_FLOAT:
+	case VALUE_FLOAT:
 		return fv.(FloatValue).Value()
-	case FIELD_BOOL:
+	case VALUE_BOOL:
 		return fv.(BoolValue).Value()
-	case FIELD_DATETIME:
+	case VALUE_DATETIME:
 		return fv.(DatetimeValue).Value()
 	}
 	return nil
@@ -186,7 +225,7 @@ func (event *Event) String(fieldName string) string {
 	if fv == nil {
 		return ""
 	}
-	return fv.Raw()
+	return fv.String()
 }
 
 func (event *Event) StringValue(fieldName string) StringValue {
@@ -194,7 +233,7 @@ func (event *Event) StringValue(fieldName string) StringValue {
 	if fv == nil {
 		return nil
 	}
-	if fv.GetType() == FIELD_STRING {
+	if fv.ValueType() == VALUE_STRING {
 		return fv.(StringValue)
 	}
 	return nil
@@ -205,7 +244,7 @@ func (event *Event) IntValue(fieldName string) IntValue {
 	if fv == nil {
 		return nil
 	}
-	if fv.GetType() == FIELD_INT {
+	if fv.ValueType() == VALUE_INT {
 		return fv.(IntValue)
 	}
 	return nil
@@ -216,7 +255,7 @@ func (event *Event) FloatValue(fieldName string) FloatValue {
 	if fv == nil {
 		return nil
 	}
-	if fv.GetType() == FIELD_FLOAT {
+	if fv.ValueType() == VALUE_FLOAT {
 		return fv.(FloatValue)
 	}
 	return nil
@@ -227,7 +266,7 @@ func (event *Event) BoolValue(fieldName string) BoolValue {
 	if fv == nil {
 		return nil
 	}
-	if fv.GetType() == FIELD_FLOAT {
+	if fv.ValueType() == VALUE_FLOAT {
 		return fv.(BoolValue)
 	}
 	return nil
@@ -238,7 +277,7 @@ func (event *Event) DatetimeValue(fieldName string) DatetimeValue {
 	if fv == nil {
 		return nil
 	}
-	if fv.GetType() == FIELD_DATETIME {
+	if fv.ValueType() == VALUE_DATETIME {
 		return fv.(DatetimeValue)
 	}
 	return nil
@@ -248,7 +287,7 @@ func (event *Event) SetField(fieldName string, value FieldValue) {
 	event.fields[fieldName] = value
 }
 
-func (event *Event) SetValue(fieldName string, value string, fieldType FieldType) error {
+func (event *Event) SetValue(fieldName string, value interface{}, fieldType ValueType) error {
 	v, err := NewFieldValue(value, fieldType)
 	if err != nil {
 		return err

@@ -7,10 +7,13 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	name := NewFieldDefinition("name", event.FIELD_STRING, 0)
-	age := NewFieldDefinition("age", event.FIELD_INT, 1)
-	email := NewFieldDefinition("email", event.FIELD_STRING, 2)
-	eventtime := NewFieldDefinition("eventtime", event.FIELD_DATETIME, 3)
+
+	eventString := "Jhon;54;jhon@mail.com;2020-08-05 13:14:15"
+
+	name := NewFieldDefinition("name", event.VALUE_STRING, 0)
+	age := NewFieldDefinition("age", event.VALUE_INT, 1)
+	email := NewFieldDefinition("email", event.VALUE_STRING, 2)
+	eventtime := NewFieldDefinition("eventtime", event.VALUE_DATETIME, 3)
 
 	eventDefiniton := NewEventDefition()
 	eventDefiniton.SetField(name)
@@ -20,10 +23,11 @@ func TestParser(t *testing.T) {
 
 	parser := NewParser(eventDefiniton, ";")
 
-	evt, err := parser.Parse("Jhon;54;jhon@mail.com;2020-08-05 13:14:15")
+	evt, err := parser.Parse(eventString)
 
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	wantName := "Jhon"

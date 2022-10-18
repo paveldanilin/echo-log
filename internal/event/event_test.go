@@ -6,7 +6,7 @@ import (
 
 func TestEventSetGetField(t *testing.T) {
 	e := New()
-	e.SetValue("name", "Batman", FIELD_STRING)
+	e.SetValue("name", "Batman", VALUE_STRING)
 
 	want := "Batman"
 	got := e.Field("name").Raw()
@@ -18,7 +18,7 @@ func TestEventSetGetField(t *testing.T) {
 
 func TestEventHasField(t *testing.T) {
 	e := New()
-	e.SetValue("name", "Batman", FIELD_STRING)
+	e.SetValue("name", "Batman", VALUE_STRING)
 
 	want := true
 	got := e.Has("name")
@@ -30,7 +30,7 @@ func TestEventHasField(t *testing.T) {
 
 func TestEventDoesNotHaveField(t *testing.T) {
 	e := New()
-	e.SetValue("name", "Batman", FIELD_STRING)
+	e.SetValue("name", "Batman", VALUE_STRING)
 
 	want := false
 	got := e.Has("age")
