@@ -38,8 +38,8 @@ func NewEventDefition(pattern string) *EventDefinition {
 	}
 }
 
-func (def *EventDefinition) SetField(field *FieldDefinition) {
-	def.Definition.SetField(field)
+func (def *EventDefinition) SetField(field *FieldDefinition) event.FieldDefinition {
+	return def.Definition.SetField(field)
 }
 
 func (def *EventDefinition) GetField(fieldName string) *FieldDefinition {
@@ -80,7 +80,7 @@ func (p *parser) Parse(text string) (*event.Event, error) {
 	for fieldName, fieldDefinition := range def.Fields() {
 		groupIndex := def.re.SubexpIndex(fieldDefinition.(*FieldDefinition).groupName)
 		rawText := strings.TrimSpace(matches[groupIndex])
-		err := e.SetValue(fieldName, rawText, fieldDefinition.ValueType())
+		err := e.SetValue(fieldName, rawText, fieldDefinition.ValueType(), fieldDefinition.Parameters())
 		if err != nil {
 			return nil, err
 		}

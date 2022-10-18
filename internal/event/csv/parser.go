@@ -34,8 +34,8 @@ func NewEventDefition() *EventDefinition {
 	return &EventDefinition{Definition: event.NewDefinition()}
 }
 
-func (def *EventDefinition) SetField(field *FieldDefinition) {
-	def.Definition.SetField(field)
+func (def *EventDefinition) SetField(field *FieldDefinition) event.FieldDefinition {
+	return def.Definition.SetField(field)
 }
 
 func (def *EventDefinition) GetField(fieldName string) *FieldDefinition {
@@ -75,7 +75,7 @@ func (p *parser) Parse(text string) (*event.Event, error) {
 		if fieldIndex > csvFieldsNum {
 			return nil, fmt.Errorf("[%s]: column index `%d` does not exist", fieldName, fieldIndex)
 		}
-		err := e.SetValue(fieldName, csvFields[fieldIndex], fieldDefinition.ValueType())
+		err := e.SetValue(fieldName, csvFields[fieldIndex], fieldDefinition.ValueType(), fieldDefinition.Parameters())
 		if err != nil {
 			return nil, err
 		}

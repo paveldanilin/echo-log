@@ -39,8 +39,8 @@ func NewEventDefition() *EventDefinition {
 	}
 }
 
-func (def *EventDefinition) SetField(field *FieldDefinition) {
-	def.Definition.SetField(field)
+func (def *EventDefinition) SetField(field *FieldDefinition) event.FieldDefinition {
+	return def.Definition.SetField(field)
 }
 
 func (def *EventDefinition) GetField(fieldName string) *FieldDefinition {
@@ -79,7 +79,7 @@ func (p *parser) Parse(text string) (*event.Event, error) {
 		if v == nil {
 			v = ""
 		}
-		e.SetValue(fieldName, v, fieldDefinition.ValueType())
+		e.SetValue(fieldName, v, fieldDefinition.ValueType(), fieldDefinition.Parameters())
 	}
 
 	return e, nil

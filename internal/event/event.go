@@ -106,10 +106,10 @@ func (dt *datetimeValue) Value() time.Time {
 }
 
 // Creates a new feild value
-func NewFieldValue(raw interface{}, fieldType ValueType) (FieldValue, error) {
+func NewFieldValue(raw interface{}, fieldType ValueType, parameters map[string]string) (FieldValue, error) {
 
 	if isString(raw) {
-		r, err := parseValue(raw.(string), fieldType)
+		r, err := parseValue(raw.(string), fieldType, parameters)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func isString(v interface{}) bool {
 }
 
 // Converts string to a specific type
-func parseValue(s string, fieldType ValueType) (interface{}, error) {
+func parseValue(s string, fieldType ValueType, parameters map[string]string) (interface{}, error) {
 	switch fieldType {
 	case VALUE_STRING:
 		return s, nil
@@ -166,13 +166,32 @@ func parseValue(s string, fieldType ValueType) (interface{}, error) {
 		}
 		return b, nil
 	case VALUE_DATETIME:
-		dt := carbon.Parse(s)
+		var dt carbon.Carbon
+		if mapHas(parameters, "format") {
+			if mapHas(parameters, "tz") {
+				dt = carbon.ParseByFormat(s, mapGet(parameters, "format"), mapGet(parameters, "tz"))
+			} else {
+				dt = carbon.ParseByFormat(s, mapGet(parameters, "format"))
+			}
+		} else {
+			dt = carbon.Parse(s)
+		}
+
 		if dt.Error != nil {
 			return nil, dt.Error
 		}
 		return dt.Carbon2Time(), nil
 	}
 	return nil, errors.New("unknown field type")
+}
+
+func mapGet(m map[string]string, name string) string {
+	return m[name]
+}
+
+func mapHas(m map[string]string, name string) bool {
+	_, ok := m[name]
+	return ok
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -287,8 +306,11 @@ func (event *Event) SetField(fieldName string, value FieldValue) {
 	event.fields[fieldName] = value
 }
 
-func (event *Event) SetValue(fieldName string, value interface{}, fieldType ValueType) error {
-	v, err := NewFieldValue(value, fieldType)
+func (event *Event) SetValue(fieldName string, value interface{}, fieldType ValueType, parameters map[string]string) error {
+	if parameters == nil {
+		parameters = map[string]string{}
+	}
+	v, err := NewFieldValue(value, fieldType, parameters)
 	if err != nil {
 		return err
 	}
