@@ -1,0 +1,10 @@
+logwatch:
+
+  file:
+    path: "./test.log"
+    definition:
+      - event:
+        name: "test"
+        fields:
+
+
